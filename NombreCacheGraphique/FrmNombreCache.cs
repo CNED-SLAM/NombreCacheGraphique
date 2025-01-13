@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
+using Serilog;
+using Serilog.Formatting.Json;
 
 namespace NombreCacheGraphique
 {
@@ -25,6 +27,15 @@ namespace NombreCacheGraphique
         /// <param name="e"></param>
         private void FrmNombreCache_Load(object sender, EventArgs e)
         {
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Verbose()
+                .WriteTo.Console()
+                .WriteTo.File(new JsonFormatter(),"logs/log.txt", rollingInterval: RollingInterval.Day)
+                .WriteTo.File("logs/errorlog.txt", 
+                restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information)
+                .WriteTo.EventLog("NombreCacheGraphique", manageEventSource: true,
+                restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Fatal)
+                .CreateLogger();
             BtnRejouer_Click(null, null);
         }
 
@@ -41,6 +52,7 @@ namespace NombreCacheGraphique
             }
             else
             {
+                Log.Debug("méthode initialiser : else du test sur phase qui doit être à 2. phase = {0}", phase);
                 grpValeur.Text = "Essai  (entre 1 et 100)";
                 nbEssai = 0;
                 grpReponse.Text = "";
@@ -127,8 +139,10 @@ namespace NombreCacheGraphique
                     }
                 }
             }
-            catch
+            catch(Exception ex)
             {
+                Log.Information("erreur de convrsion en int de la valeur saisie. valeur = {0}", txtValeur.Text);
+                Log.Fatal(ex, "erreur de conversion en int de la valeur saisie");
                 EffacerZoneSaisie();
             }
         }
